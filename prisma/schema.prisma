@@ -13,3 +13,206 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id            String             @id @default(cuid())
+  name          String
+  fullName      String
+  username      String             @unique
+  email         String             @unique
+  gender        String
+  instituteName String
+  country       String
+  dob           DateTime
+  bio           String
+  subscription  SubscriptionModels
+  courses       Course[]
+  quizzes       Quiz[]
+  flashcards    Flashcard[]
+  coupons       Coupon[]
+  notes         Note[]
+  reports       Report[]
+  transactions  Transaction[]
+  notifications Notification[]
+  friendOf      Friend[]           @relation("FriendUsers")
+  friends       Friend[]           @relation("UserFriends")
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+}
+
+model Friend {
+  id        String   @id @default(cuid())
+  userId    String
+  friendId  String
+  user      User     @relation("UserFriends", fields: [userId], references: [id])
+  friend    User     @relation("FriendUsers", fields: [friendId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  content   String
+  title     String
+  severity  Severity
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Course {
+  id               String           @id @default(cuid())
+  title            String
+  description      String
+  progress         Float //Current progress/total modules
+  generationStatus GenerationStatus
+  language         String
+  complexity       Complexity
+  subjectName      String
+  tokens           Int
+  userId           String
+  modules          Module[]
+  reports          Report[]
+  user             User             @relation(fields: [userId], references: [id])
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+
+model GenerationModule {
+  id        String   @id @default(cuid())
+  title     String
+  metadata  String
+  data      Json
+  modules   Module[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Module {
+  id                 String           @id @default(cuid())
+  title              String
+  description        String?
+  content            String
+  status             ModuleStatus
+  generationStatus   GenerationStatus
+  isComplete         Boolean          @default(false)
+  index              Int
+  tokens             Int
+  courseId           String
+  generationModuleId String
+  quizzes            Quiz[]
+  flashcards         Flashcard[]
+  generationModule   GenerationModule @relation(fields: [generationModuleId], references: [id])
+  course             Course           @relation(fields: [courseId], references: [id])
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+}
+
+model Quiz {
+  id         String   @id @default(cuid())
+  gna        Json
+  totalScore Int
+  maxScore   Int
+  timeTaken  Decimal
+  moduleId   String
+  userId     String
+  module     Module   @relation(fields: [moduleId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Flashcard {
+  id        String   @id @default(cuid())
+  content   Json
+  moduleId  String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  module    Module   @relation(fields: [moduleId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Transaction {
+  id               String             @id @default(cuid())
+  dodoCustomerId   String
+  subscribtionType SubscriptionModels
+  amount           Float
+  tax              Float              @default(0)
+  currency         String
+  productId        String
+  quantity         Int                @default(1)
+  paymentId        String
+  paymentLink      String
+  userId           String
+  user             User               @relation(fields: [userId], references: [id])
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+}
+
+model Coupon {
+  id                 String    @id @default(cuid())
+  code               String    @unique
+  description        String?   @default("")
+  credits            Int       @default(0)
+  maxRedemptions     Int       @default(0)
+  currentRedemptions Int       @default(0)
+  expiresAt          DateTime?
+  isActive           Boolean   @default(true)
+  userId             String
+  user               User      @relation(fields: [userId], references: [id])
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Report {
+  id        String   @id @default(cuid())
+  content   String
+  url       String
+  courseId  String
+  userId    String
+  course    Course   @relation(fields: [courseId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum SubscriptionModels {
+  PRO
+  PREMIUM
+  FREE
+}
+
+enum ModuleStatus {
+  SUCCESSFUll
+  FAILURE
+}
+
+enum GenerationStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+}
+
+enum Complexity {
+  BEGINNER
+  MEDIUM
+  ADVANCED
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+}
